@@ -5,6 +5,7 @@ import com.cmpe272.aegis.model.form.LoginForm;
 import com.cmpe272.aegis.model.form.RegisterForm;
 import com.cmpe272.aegis.model.form.Verify2FAForm;
 import com.cmpe272.aegis.service.UserService;
+import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,13 +37,25 @@ public class UserController {
         return userService.login(form);
     }
 
-    @PostMapping("/verify_2FA")
-    public ResponseDTO<Map<String, Long>> verify2FA(@RequestBody Verify2FAForm form){
-        return userService.verify2FACode(form.getEmail(), form.getCode());
+    @PostMapping("/send_verify_email")
+    public ResponseDTO<String> sendVerifyEmail(@RequestBody Map<String, String> map) throws MessagingException {
+        return userService.sendEmailVerifyCode(map.get("email"));
     }
+
+    @PostMapping("/verify_email")
+    public ResponseDTO<String> verifyEmail(@RequestBody Map<String, String> map){
+        return userService.verifyEmail(map.get("email"), map.get("code"));
+    }
+
 
     @PostMapping("/generate_2FA")
     public ResponseDTO<String> generate2FA(@RequestBody Map<String, String> map){
         return userService.generateUser2FACode(map.get("email"));
     }
+    @PostMapping("/verify_2FA")
+    public ResponseDTO<Map<String, Long>> verify2FA(@RequestBody Verify2FAForm form){
+        return userService.verify2FACode(form.getEmail(), form.getCode());
+    }
+
+
 }

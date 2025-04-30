@@ -9,6 +9,7 @@ import com.cmpe272.aegis.model.User;
 import com.cmpe272.aegis.model.form.LoginForm;
 import com.cmpe272.aegis.model.form.RegisterForm;
 import com.cmpe272.aegis.repository.UserRepository;
+import jakarta.mail.MessagingException;
 import org.apache.http.client.protocol.ResponseProcessCookies;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -31,6 +32,12 @@ public class UserService {
     UserRepository userRepository;
     @Autowired
     TwoFactorService twoFactorService;
+
+    @Autowired
+    MailService mailService;
+
+    @Autowired
+    VerificationCodeService verificationCodeService;
 
     @Autowired
     AESUtil aesUtil;
@@ -110,6 +117,19 @@ public class UserService {
             return ResponseDTO.fail(HTTPCode.BAD_REQUEST);
         }
     }
+
+    public ResponseDTO<String> sendEmailVerifyCode(String email) throws MessagingException {
+        mailService.sendVerificationEmail(email);
+        return ResponseDTO.ok();
+    }
+
+    public ResponseDTO<String> verifyEmail(String email, String code){
+        if(!verificationCodeService.verifyCode(email, code)){
+            return ResponseDTO.fail(HTTPCode.BAD_REQUEST, "Wrong verification code");
+        }
+        return ResponseDTO.ok();
+    }
+
 
     public ResponseDTO<String> request2FAReset(String email, String password) {
         Optional<User> tempUser = userRepository.findByEmail(email);
