@@ -11,7 +11,6 @@ public enum UserRole {
     MANAGER(1),
     USER(2);
 
-
     private final int role;
     UserRole(int role) {
         this.role = role;
