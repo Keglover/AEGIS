@@ -1,0 +1,100 @@
+[
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2024-22233",
+    "name": "CVE-2024-22233",
+    "summary": "In Spring Framework versions 6.0.15 and 6.1.2, it is possible for a user to provide specially crafted HTTP requests that may cause a denial-of-service (DoS) condition.\n\nSpecifically, an application is vulnerable when all of the following are true:\n\n  *  the application uses Spring MVC\n  *  Spring Security 6.1.6+ or 6.2.1+ is on the classpath\n\n\nTypically, Spring Boot applications need the org.springframework.boot:spring-boot-starter-web\u00a0and org.springframework.boot:spring-boot-starter-security\u00a0dependencies to meet all conditions.",
+    "cvss_v3_score": "7.5 HIGH"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2023-51650",
+    "name": "CVE-2023-51650",
+    "summary": "Hertzbeat is an open source, real-time monitoring system. Prior to version 1.4.1, Spring Boot permission configuration issues caused unauthorized access vulnerabilities to three interfaces. This could result in disclosure of sensitive server information. Version 1.4.1 fixes this issue.",
+    "cvss_v3_score": "7.5 HIGH"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2023-34055",
+    "name": "CVE-2023-34055",
+    "summary": "In Spring Boot versions 2.7.0 - 2.7.17, 3.0.0-3.0.12 and 3.1.0-3.1.5, it is possible for a user to provide specially crafted HTTP requests that may cause a denial-of-service (DoS) condition.\n\nSpecifically, an application is vulnerable when all of the following are true:\n\n  *  the application uses Spring MVC or Spring WebFlux\n  *  org.springframework.boot:spring-boot-actuator\u00a0is on the classpath",
+    "cvss_v3_score": "6.5 MEDIUM"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2023-34053",
+    "name": "CVE-2023-34053",
+    "summary": "In Spring Framework versions 6.0.0 - 6.0.13, it is possible for a user to provide specially crafted HTTP requests that may cause a denial-of-service (DoS) condition.\n\nSpecifically, an application is vulnerable when all of the following are true:\n\n  *  the application uses Spring MVC or Spring WebFlux\n  *  io.micrometer:micrometer-core\u00a0is on the classpath\n  *  an ObservationRegistry is configured in the application to record observations\n\n\nTypically, Spring Boot applications need the org.springframework.boot:spring-boot-actuator\u00a0dependency to meet all conditions.",
+    "cvss_v3_score": "7.5 HIGH"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2023-38286",
+    "name": "CVE-2023-38286",
+    "summary": "Thymeleaf through 3.1.1.RELEASE, as used in spring-boot-admin (aka Spring Boot Admin) through 3.1.1 and other products, allows sandbox bypass via crafted HTML. This may be relevant for SSTI (Server Side Template Injection) and code execution in spring-boot-admin if MailNotifier is enabled and there is write access to environment variables via the UI.",
+    "cvss_v3_score": "7.5 HIGH"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2023-20883",
+    "name": "CVE-2023-20883",
+    "summary": "In Spring Boot versions 3.0.0 - 3.0.6, 2.7.0 - 2.7.11, 2.6.0 - 2.6.14, 2.5.0 - 2.5.14 and older unsupported versions, there is potential for a denial-of-service (DoS) attack if Spring MVC is used together with a reverse proxy cache.",
+    "cvss_v3_score": "7.5 HIGH"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2023-20873",
+    "name": "CVE-2023-20873",
+    "summary": "In Spring Boot versions 3.0.0 - 3.0.5, 2.7.0 - 2.7.10, and older unsupported versions, an application that is deployed to Cloud Foundry could be susceptible to a security bypass. Users of affected versions should apply the following mitigation: 3.0.x users should upgrade to 3.0.6+. 2.7.x users should upgrade to 2.7.11+. Users of older, unsupported versions should upgrade to 3.0.6+ or 2.7.11+.",
+    "cvss_v3_score": "9.8 CRITICAL"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2023-22602",
+    "name": "CVE-2023-22602",
+    "summary": "When using Apache Shiro before 1.11.0 together with Spring Boot 2.6+, a specially crafted HTTP request may cause an authentication bypass.\n\nThe authentication bypass occurs when Shiro and Spring Boot are using different pattern-matching techniques. Both Shiro and Spring Boot < 2.6 default to Ant style pattern matching.\nMitigation: Update to Apache Shiro 1.11.0, or set the following Spring Boot configuration value:  `spring.mvc.pathmatch.matching-strategy = ant_path_matcher`",
+    "cvss_v3_score": "7.5 HIGH"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2022-46166",
+    "name": "CVE-2022-46166",
+    "summary": "Spring boot admins is an open source administrative user interface for management of spring boot applications. All users who run Spring Boot Admin Server, having enabled Notifiers (e.g. Teams-Notifier) and write access to environment variables via UI are affected. Users are advised to upgrade to the most recent releases of Spring Boot Admin 2.6.10 and 2.7.8 to resolve this issue. Users unable to upgrade may disable any notifier or disable write access (POST request) on `/env` actuator endpoint.",
+    "cvss_v3_score": "9.8 CRITICAL"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2022-31691",
+    "name": "CVE-2022-31691",
+    "summary": "Spring Tools 4 for Eclipse version 4.16.0 and below as well as VSCode extensions such as Spring Boot Tools, Concourse CI Pipeline Editor, Bosh Editor and Cloudfoundry Manifest YML Support version 1.39.0 and below all use Snakeyaml library for YAML editing support. This library allows for some special syntax in the YAML that under certain circumstances allows for potentially harmful remote code execution by the attacker.",
+    "cvss_v3_score": "9.8 CRITICAL"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2022-23726",
+    "name": "CVE-2022-23726",
+    "summary": "PingCentral versions prior to listed versions expose Spring Boot actuator endpoints that with administrative authentication return large amounts of sensitive environmental and application information.",
+    "cvss_v3_score": "4.9 MEDIUM"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2022-32430",
+    "name": "CVE-2022-32430",
+    "summary": "An access control issue in Lin CMS Spring Boot v0.2.1 allows attackers to access the backend information and functions within the application.",
+    "cvss_v3_score": "7.5 HIGH"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2022-22965",
+    "name": "CVE-2022-22965",
+    "summary": "A Spring MVC or Spring WebFlux application running on JDK 9+ may be vulnerable to remote code execution (RCE) via data binding. The specific exploit requires the application to run on Tomcat as a WAR deployment. If the application is deployed as a Spring Boot executable jar, i.e. the default, it is not vulnerable to the exploit. However, the nature of the vulnerability is more general, and there may be other ways to exploit it.",
+    "cvss_v3_score": "9.8 CRITICAL"
+  },
+  {
+    "tech": "spring boot",
+    "cve_link": "https://nvd.nist.gov/vuln/detail/CVE-2021-39052",
+    "name": "CVE-2021-39052",
+    "summary": "IBM Spectrum Copy Data Management 2.2.13 and earlier could allow a remote attacker to access the Spring Boot console without authorization. IBM X-Force ID: 214523.",
+    "cvss_v3_score": "9.8 CRITICAL"
+  }
+]

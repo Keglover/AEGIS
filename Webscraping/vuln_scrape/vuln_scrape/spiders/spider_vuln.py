@@ -75,11 +75,11 @@ class CveDetailsSpider(scrapy.Spider):
                 yield item
             
             scraped += 1
-            if scraped >= 500:
+            if scraped >= 50:
                 break  # stop yielding more rows on this page
-        #currently limiting to 500 vulns collected for each tech
-        # if we're still under 500, follow next page
-        if scraped < 500:
+        #currently limiting to 50 vulns collected for each tech
+        # if we're still under 50, follow next page
+        if scraped < 50:
             next_page = response.css('a[data-testid="pagination-link-page->"]::attr(href)').get()
             if next_page:
                 yield response.follow(

@@ -8,11 +8,14 @@ import subprocess
 from scrapy.crawler import CrawlerProcess
 from scrapy import Spider
 from urllib.parse import quote_plus
-from vuln_scrape.vuln_scrape.spiders.spider_vuln import CveDetailsSpider as VulnSpider
-# Cassandra / Astra DB imports
-from cassandra.cluster import Cluster
-from cassandra.auth import PlainTextAuthProvider
+from vuln_scrape.spiders.spider_vuln import CveDetailsSpider as VulnSpider
+from astrapy import DataAPIClient
 
+ASTRA_DB_BASE_URL         = os.getenv("ASTRA_DB_BASE_URL")
+ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
+ASTRA_DB_KEYSPACE         = os.getenv("ASTRA_DB_KEYSPACE")
+ASTRA_COLLECTION_NAME     = os.getenv("ASTRA_COLLECTION_NAME", "vulnerabilities")
+LANGFLOW_API              = os.getenv("LANGFLOW_API_URL")
 ####################
 #  Helper Methods  #
 ####################
@@ -46,39 +49,18 @@ def jl_to_json_array(jl_path="vulnerabilities.jl", json_path="vulnerabilities.js
     return arr
 
 def upload_to_astra(data):
-    """Upload list of dicts to Astra DB Cassandra table `vulnerabilities`."""
-    bundle_path   = os.getenv("ASTRA_DB_SECURE_BUNDLE_PATH")
-    client_id     = os.getenv("ASTRA_DB_CLIENT_ID")
-    client_secret = os.getenv("ASTRA_DB_CLIENT_SECRET")
-    keyspace      = os.getenv("ASTRA_DB_KEYSPACE")
-
-    cloud_config   = {'secure_connect_bundle': bundle_path}
-    auth_provider  = PlainTextAuthProvider(client_id, client_secret)
-    cluster        = Cluster(cloud=cloud_config, auth_provider=auth_provider)
-    session        = cluster.connect(keyspace)
-
-    # Assumes table vulnerabilities (tech text, name text, cve_link text, summary text, cvss_v3_score text)
-    insert_cql = session.prepare(
-        "INSERT INTO vulnerabilities (tech, name, cve_link, summary, cvss_v3_score) VALUES (?, ?, ?, ?, ?)"
+    """Upload list of dicts to Astra DB Vector collection via astrapy."""
+    # Initialize ASTRA Data API client
+    client = DataAPIClient()
+    database = client.get_database(
+        ASTRA_DB_BASE_URL,
+        token=ASTRA_DB_APPLICATION_TOKEN,
     )
+    collection = database.get_collection(ASTRA_COLLECTION_NAME)
 
-    for item in data:
-        session.execute(insert_cql, (
-            item["tech"],
-            item["name"],
-            item["cve_link"],
-            item["summary"],
-            item["cvss_v3_score"]
-        ))
-
-    cluster.shutdown()
-
-def call_langflow(techs):
-    """POST to Langflow API to get filtered vulnerabilities."""
-    url = os.getenv("LANGFLOW_API_URL")
-    resp = requests.post(url, json={"technologies": techs})
-    resp.raise_for_status()
-    return resp.json()
+    # Bulk insert documents
+    result = collection.insert_many(data)
+    return result
 
 ##############
 #  Flask App #
@@ -89,7 +71,7 @@ app = Flask(__name__)
 @app.route("/vulns", methods=["POST"])
 def vulnerabilities_endpoint():
     payload = request.get_json(force=True)
-    techs   = payload.get("technologies")
+    techs   = payload.get("techs")
     if not techs or not isinstance(techs, list):
         return jsonify({"error": "Must provide a list of technologies"}), 400
 
@@ -100,13 +82,9 @@ def vulnerabilities_endpoint():
 
     # # 3) Upload to Astra DB
     # upload_to_astra(data)
-
-    # # 4) Query Langflow and return its response
-    # result = call_langflow(techs)
-    result = {
-        "test": "ok"
-    }
-    return jsonify(result)
+    
+    #result should return 200
+    return '', 200
 
 
 if __name__ == "__main__":
