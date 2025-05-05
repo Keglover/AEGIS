@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import subprocess
 
@@ -11,25 +12,15 @@ from urllib.parse import quote_plus
 from vuln_scrape.spiders.spider_vuln import CveDetailsSpider as VulnSpider
 from astrapy import DataAPIClient
 
-ASTRA_DB_BASE_URL         = os.getenv("ASTRA_DB_BASE_URL")
+load_dotenv()
+
+ASTRA_DB_BASE_URL = os.getenv("ASTRA_DB_BASE_URL")
 ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
-ASTRA_DB_KEYSPACE         = os.getenv("ASTRA_DB_KEYSPACE")
-ASTRA_COLLECTION_NAME     = os.getenv("ASTRA_COLLECTION_NAME", "vulnerabilities")
-LANGFLOW_API              = os.getenv("LANGFLOW_API_URL")
+
 ####################
 #  Helper Methods  #
 ####################
 
-# def run_spider(techs):
-#     """Run the Scrapy spider programmatically."""
-#     def _crawl():
-#         proc = CrawlerProcess()
-#         proc.crawl(VulnSpider, techs=",".join(techs))
-#         proc.start()  # this reactor is in the child, so it won’t conflict
-
-#     p = Process(target=_crawl)
-#     p.start()
-#     p.join()
 def run_spider(techs):
     cmd = [
         "scrapy", "crawl", "vuln_spider",
@@ -49,18 +40,42 @@ def jl_to_json_array(jl_path="vulnerabilities.jl", json_path="vulnerabilities.js
     return arr
 
 def upload_to_astra(data):
-    """Upload list of dicts to Astra DB Vector collection via astrapy."""
-    # Initialize ASTRA Data API client
+    """Insert only new records into Astra DB collection and generate vector embeddings."""
     client = DataAPIClient()
     database = client.get_database(
         ASTRA_DB_BASE_URL,
         token=ASTRA_DB_APPLICATION_TOKEN,
     )
-    collection = database.get_collection(ASTRA_COLLECTION_NAME)
+    collection = database.get_collection("vuln_test_3")
 
-    # Bulk insert documents
-    result = collection.insert_many(data)
-    return result
+    # Fetch existing names
+    existing_docs = collection.find(
+        filter={},
+        projection=['name']
+    )
+    existing_names = {doc['name'] for doc in existing_docs}
+
+    # Filter only new items
+    new_records = [item for item in data if item['name'] not in existing_names]
+    if not new_records:
+        return {'inserted_count': 0, 'message': 'No new records.'}
+
+    inserted_count = 0
+    for item in new_records:
+        # Prepare document with reserved $vectorize for automatic embeddings
+        doc = {
+            'tech': item['tech'],
+            'cve_link': item['cve_link'],
+            'name': item['name'],
+            'summary': item['summary'],
+            'cvss_v3_score': item['cvss_v3_score'],
+            '$vectorize': item['summary']  # use summary text to generate embeddings
+        }
+        result = collection.insert_one(doc)
+        # result.inserted_id is available
+        inserted_count += 1
+
+    return {'inserted_count': inserted_count}
 
 ##############
 #  Flask App #
@@ -81,7 +96,8 @@ def vulnerabilities_endpoint():
     data = jl_to_json_array()
 
     # # 3) Upload to Astra DB
-    # upload_to_astra(data)
+    result = upload_to_astra(data)
+    print(result)
     
     #result should return 200
     return '', 200
