@@ -1,53 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Form, Input, Button, Typography, message } from 'antd';
 import { verify2FA } from '../api/auth';
 
+const { Title } = Typography;
+
 function Verify2FAPage() {
-    const navigate = useNavigate();
     const location = useLocation();
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
-    const [code, setCode] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [form] = Form.useForm();
 
     useEffect(() => {
         const passedEmail = location.state?.email;
         if (passedEmail) {
             setEmail(passedEmail);
         } else {
-            alert('Missing email, redirecting to login');
+            message.error('Missing email. Redirecting to login.');
             navigate('/login');
         }
     }, [location.state, navigate]);
 
-    const handleVerify = async () => {
-        const res = await verify2FA({ email, code });
-        if (res.code === 200) {
-            alert('2FA verified successfully');
-            navigate('/home'); // 🔁 可替换为你自己的主页路径
-        } else {
-            alert(res.msg || '2FA verification failed');
+    const handleVerify = async (values) => {
+        setLoading(true);
+        try {
+            const res = await verify2FA({ email, code: values.code });
+            if (res.code === 200) {
+                localStorage.setItem('userId', res.data.userId);
+                localStorage.setItem('email', email);
+                message.success('2FA verification successful!');
+                navigate('/home'); // 或你自定义的首页路径
+            } else {
+                message.error(res.msg || '2FA verification failed');
+            }
+        } catch (error) {
+            message.error('Network error during 2FA verification');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '400px', margin: 'auto', padding: '2rem' }}>
-            <h2>Two-Factor Authentication</h2>
-            <p><strong>Account:</strong> {email}</p>
+        <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh', alignItems: 'center' }}>
+            <div style={{ width: 400, padding: 24, background: '#fff', boxShadow: '0 0 10px rgba(0,0,0,0.1)' }}>
+                <Title level={3} style={{ textAlign: 'center' }}>Two-Factor Verification</Title>
 
-            <input
-                type="text"
-                placeholder="Enter 6-digit code"
-                value={code}
-                onChange={e => setCode(e.target.value)}
-                maxLength={6}
-                style={{ width: '100%', padding: '0.5rem', marginTop: '1rem' }}
-            />
+                <Form form={form} layout="vertical" onFinish={handleVerify}>
+                    <Form.Item label="Account Email">
+                        <Input value={email} disabled />
+                    </Form.Item>
 
-            <button
-                onClick={handleVerify}
-                style={{ width: '100%', padding: '0.6rem', marginTop: '1rem' }}
-            >
-                Verify
-            </button>
+                    <Form.Item
+                        label="Verification Code"
+                        name="code"
+                        rules={[{ required: true, message: 'Please enter the 6-digit code' }]}
+                    >
+                        <Input maxLength={6} />
+                    </Form.Item>
+
+                    <Form.Item>
+                        <Button type="primary" htmlType="submit" loading={loading} block>
+                            Verify
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </div>
         </div>
     );
 }

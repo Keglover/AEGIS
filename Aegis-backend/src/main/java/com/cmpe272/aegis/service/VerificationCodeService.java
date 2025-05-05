@@ -21,8 +21,12 @@ public class VerificationCodeService {
     }
 
     public boolean verifyCode(String email, String inputCode) {
-        String savedCode = stringRedisTemplate.opsForValue().get("register:code:" + email);
-        return inputCode.equals(savedCode);
+        String savedCode = stringRedisTemplate.opsForValue().get("aegis_register:code:" + email);
+        if(inputCode.equals(savedCode)){
+            stringRedisTemplate.delete("aegis_register:code:" + email);
+            return true;
+        }
+        return false;
     }
 
 }

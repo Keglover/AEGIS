@@ -1,61 +1,71 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Form, Input, Button, Typography, message } from 'antd';
 import { login } from '../api/auth';
-import InputField from '../components/InputField';
+
+const { Title } = Typography;
 
 function LoginPage() {
-    const [form, setForm] = useState({ email: '', password: '' });
+    const [form] = Form.useForm();
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
 
-    const handleChange = (e) => {
-        setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
-
-    const handleLogin = async () => {
+    const handleLogin = async (values) => {
+        setLoading(true);
         try {
-            const res = await login(form);
+            const res = await login(values);
 
             if (res.code === 200) {
-                navigate('/verify2fa', {state: {email: form.email}});
+                navigate('/verify2fa', { state: { email: values.email } });
             } else if (res.code === 400 && res.msg === 'Need to enable 2FA before sign in') {
-                navigate('/need-2fa', { state: { email: form.email } });
+                navigate('/need-2fa', { state: { email: values.email } });
             } else {
-                alert(res.msg || 'Login failed');
+                message.error(res.msg || 'Login failed');
             }
         } catch (error) {
-            alert('Network error or server not responding');
+            message.error('Network error or server not responding');
             console.error(error);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '400px', margin: 'auto', padding: '2rem' }}>
-            <h2 style={{ textAlign: 'center' }}>Login</h2>
-            <InputField
-                label="Email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-            />
-            <InputField
-                label="Password"
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-            />
-            <button onClick={handleLogin} style={{ width: '100%', padding: '0.5rem' }}>
-                Login
-            </button>
-            <p style={{ marginTop: '1rem', textAlign: 'center' }}>
-                Don't have an account?{' '}
-                <button
-                    onClick={() => navigate('/register')}
-                    style={{ background: 'none', border: 'none', color: 'blue', cursor: 'pointer' }}
-                >
-                    Register
-                </button>
-            </p>
+        <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh', alignItems: 'center' }}>
+            <div style={{ width: 400, padding: 24, background: '#fff', boxShadow: '0 0 10px rgba(0,0,0,0.1)' }}>
+                <Title level={3} style={{ textAlign: 'center' }}>Login</Title>
+
+                <Form form={form} layout="vertical" onFinish={handleLogin}>
+                    <Form.Item
+                        label="Email"
+                        name="email"
+                        rules={[{ required: true, message: 'Please input your email!' }]}
+                    >
+                        <Input />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Password"
+                        name="password"
+                        rules={[{ required: true, message: 'Please input your password!' }]}
+                    >
+                        <Input.Password />
+                    </Form.Item>
+
+                    <Form.Item>
+                        <Button type="primary" htmlType="submit" loading={loading} block>
+                            Login
+                        </Button>
+                    </Form.Item>
+                </Form>
+
+                <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                    Don't have an account?{' '}
+                    <Button type="link" onClick={() => navigate('/register')}>
+                        Register
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }
