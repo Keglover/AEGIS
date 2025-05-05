@@ -1,92 +1,131 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import {
+    Typography,
+    Input,
+    Button,
+    Card,
+    Space,
+    message,
+} from 'antd';
+import { QRCodeCanvas } from 'qrcode.react';
+
+const { Title, Paragraph, Text } = Typography;
 
 function Enable2FAPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const [email, setEmail] = useState('');
-    const [qrCodeUrl, setQrCodeUrl] = useState('');
+    const email = location.state?.email;
+
+    const [qrUrl, setQrUrl] = useState('');
+    const [secret, setSecret] = useState('');
     const [code, setCode] = useState('');
-    const [enabled, setEnabled] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [verifying, setVerifying] = useState(false);
 
-    // 页面加载时从上一个页面获取 email 并生成二维码
     useEffect(() => {
-        const passedEmail = location.state?.email;
-        if (!passedEmail) {
-            alert('Missing email. Redirecting to login.');
+        if (!email) {
+            message.error('No email provided. Redirecting to login.');
             navigate('/login');
-        } else {
-            setEmail(passedEmail);
-            generateQRCode(passedEmail);
+            return;
         }
-    }, [location.state, navigate]);
 
-    // 向后端请求二维码图片 URL
-    const generateQRCode = async (email) => {
-        const res = await fetch('http://localhost:8080/auth/generate_2FA', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-        });
+        const fetchQRCode = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch('http://localhost:8080/auth/generate_2FA', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email }),
+                });
+                const result = await res.json();
+                if (result.code === 200) {
+                    const decodedUrl = decodeURIComponent(result.data);
+                    setQrUrl(decodedUrl);
 
-        const result = await res.json();
-        if (result.code === 200 && result.data) {
-            setQrCodeUrl(result.data); // 后端返回的二维码图像 URL
-        } else {
-            alert(result.msg || 'Failed to get QR code');
+                    const match = decodedUrl.match(/secret=([A-Z0-9]+)/);
+                    if (match) setSecret(match[1]);
+                } else {
+                    message.error(result.msg || 'Failed to generate 2FA QR.');
+                }
+            } catch (e) {
+                message.error('Error while fetching 2FA setup.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchQRCode();
+    }, [email, navigate]);
+
+    const handleVerifyCode = async () => {
+        if (!code) {
+            message.warning('Please enter the code from your Authenticator app.');
+            return;
         }
-    };
 
-    // 用户输入 6 位验证码后提交验证
-    const handleVerify = async () => {
-        const res = await fetch('http://localhost:8080/auth/verify_2FA', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, code }),
-        });
-
-        const result = await res.json();
-        if (result.code === 200) {
-            setEnabled(true);
-            setTimeout(() => navigate('/login'), 1500); // 成功后跳转登录页
-        } else {
-            alert(result.msg || 'Verification failed');
+        setVerifying(true);
+        try {
+            const res = await fetch('http://localhost:8080/auth/verify_2FA', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code }),
+            });
+            const result = await res.json();
+            if (result.code === 200) {
+                message.success('2FA successfully enabled!');
+                setTimeout(() => navigate('/login'), 1500);
+            } else {
+                message.error(result.msg || 'Invalid code. Please try again.');
+            }
+        } catch (e) {
+            message.error('Server error while verifying code.');
+        } finally {
+            setVerifying(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '500px', margin: 'auto', padding: '2rem' }}>
-            <h2>Enable Two-Factor Authentication</h2>
-            <p><strong>Account:</strong> {email}</p>
+        <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Card style={{ width: 500 }}>
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Title level={3}>Enable Two-Factor Authentication</Title>
 
-            {qrCodeUrl && (
-                <div style={{ textAlign: 'center', margin: '1rem 0' }}>
-                    <img
-                        src={qrCodeUrl}
-                        alt="2FA QR Code"
-                        style={{ width: '200px', height: '200px' }}
-                    />
-                </div>
-            )}
+                    <Paragraph>
+                        Your Email:
+                    </Paragraph>
+                    <Input value={email} disabled />
 
-            <h4>Enter the 6-digit code from your Authenticator app:</h4>
-            <input
-                type="text"
-                placeholder="123456"
-                value={code}
-                onChange={e => setCode(e.target.value)}
-                maxLength={6}
-                style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem' }}
-            />
-            <button onClick={handleVerify} style={{ width: '100%', padding: '0.6rem' }}>
-                Confirm and Enable
-            </button>
+                    {qrUrl && (
+                        <>
+                            <Paragraph>
+                                Scan this QR code using your <Text strong>Google Authenticator</Text> app:
+                            </Paragraph>
+                            <div style={{ textAlign: 'center' }}>
+                                <QRCodeCanvas value={qrUrl} size={200} />
+                            </div>
 
-            {enabled && (
-                <p style={{ marginTop: '1rem', color: 'green' }}>
-                    ✅ 2FA setup complete! Redirecting to login...
-                </p>
-            )}
+                            <Paragraph>
+                                If you can't scan it, manually enter this secret:
+                                <br />
+                                <Text copyable code>{secret}</Text>
+                            </Paragraph>
+
+                            <Paragraph>After adding, enter the 6-digit code below:</Paragraph>
+                            <Input
+                                placeholder="Enter 6-digit code"
+                                maxLength={6}
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                            />
+
+                            <Button type="primary" block onClick={handleVerifyCode} loading={verifying}>
+                                Verify & Enable 2FA
+                            </Button>
+                        </>
+                    )}
+                </Space>
+            </Card>
         </div>
     );
 }

@@ -10,6 +10,7 @@ function RegisterPage() {
     const [emailVerified, setEmailVerified] = useState(false);
     const [loadingSend, setLoadingSend] = useState(false);
     const [loadingVerify, setLoadingVerify] = useState(false);
+    const [countdown, setCountdown] = useState(0); // ⏱️ 倒计时
 
     const handleSendCode = async () => {
         const email = form.getFieldValue('email');
@@ -28,6 +29,18 @@ function RegisterPage() {
             const result = await res.json();
             if (result.code === 200) {
                 message.success('Verification code sent to email.');
+
+                // ✅ 启动倒计时
+                setCountdown(60);
+                const timer = setInterval(() => {
+                    setCountdown(prev => {
+                        if (prev <= 1) {
+                            clearInterval(timer);
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
             } else {
                 message.error(result.msg || 'Failed to send code.');
             }
@@ -107,7 +120,14 @@ function RegisterPage() {
                         <Input />
                     </Form.Item>
                     <Form.Item>
-                        <Button block onClick={handleSendCode} loading={loadingSend}>Send Verification Code</Button>
+                        <Button
+                            block
+                            onClick={handleSendCode}
+                            loading={loadingSend}
+                            disabled={countdown > 0}
+                        >
+                            {countdown > 0 ? `Resend (${countdown}s)` : 'Send Verification Code'}
+                        </Button>
                     </Form.Item>
                     <Form.Item label="Verification Code" name="verifyCode">
                         <Input />

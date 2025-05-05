@@ -1,21 +1,29 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Typography, Button, Card } from 'antd';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+const { Title, Paragraph } = Typography;
 
 function Need2FASetupPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const email = location.state?.email || '';
+    const email = location.state?.email;
+
+    const handleSetup = () => {
+        navigate('/enable-2fa', { state: { email } });
+    };
 
     return (
-        <div style={{ maxWidth: '600px', margin: 'auto', padding: '2rem', textAlign: 'center' }}>
-            <h2>Two-Factor Authentication Required</h2>
-            <p>Your account requires two-factor authentication before you can sign in.</p>
-            <button
-                onClick={() => navigate('/enable-2fa', { state: { email } })}
-                style={{ padding: '0.6rem 1.2rem', fontSize: '1rem' }}
-            >
-                Set Up 2FA Now
-            </button>
+        <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
+            <Card style={{ maxWidth: 500, width: '100%', textAlign: 'center', padding: '24px 32px' }}>
+                <Title level={3}>Two-Factor Authentication Required</Title>
+                <Paragraph>
+                    Your account requires two-factor authentication before you can sign in.
+                </Paragraph>
+                <Button type="primary" onClick={handleSetup}>
+                    Set Up 2FA Now
+                </Button>
+            </Card>
         </div>
     );
 }
