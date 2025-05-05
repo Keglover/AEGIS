@@ -36,3 +36,13 @@
     transform: rotate(360deg);
   }
 }
+
+.custom-pagination {
+  margin-top: 8px !important;
+}
+
+.custom-pagination .ant-pagination-item,
+.custom-pagination .ant-pagination-prev,
+.custom-pagination .ant-pagination-next {
+  line-height: 32px !important;
+}

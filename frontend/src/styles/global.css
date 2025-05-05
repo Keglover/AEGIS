@@ -11,3 +11,8 @@ button {
     margin-top: 1rem;
     padding: 0.5rem 1rem;
 }
+.custom-pagination .ant-pagination-item,
+.custom-pagination .ant-pagination-prev,
+.custom-pagination .ant-pagination-next {
+    line-height: 32px !important;
+}

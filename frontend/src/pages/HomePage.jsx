@@ -12,14 +12,14 @@ function HomePage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // fetch('http://localhost:8080/api/project/list')
-        //     .then(res => res.json())
-        //     .then(json => {
-        //         if (json.code === 200) {
-        //             setProjects(json.data);
-        //         }
-        //     });
-        setProjects(mockProjects);
+        fetch('http://localhost:8080/api/project/list')
+            .then(res => res.json())
+            .then(json => {
+                if (json.code === 200) {
+                    setProjects(json.data);
+                }
+            });
+        //setProjects(mockProjects);
     }, []);
 
     const countByStatus = (status) =>
@@ -122,14 +122,20 @@ function HomePage() {
                         </Col>
                     </Row>
 
-                    <Card title="Project List" style={{background: '#fff'}}>
+                    <Card title="Project List" bodyStyle={{ padding: 0 }}>
                         <Table
                             rowKey="id"
                             columns={columns}
                             dataSource={projects}
-                            pagination={{pageSize: 5}}
+                            pagination={{
+                                pageSize: 5,
+                                position: ['bottomCenter'],
+                                className: 'custom-pagination',
+                            }}
                         />
+
                     </Card>
+
                 </div>
             </Content>
         </Layout>
