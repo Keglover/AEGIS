@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Card, Row, Col, Tag, Button, Typography, Avatar, Dropdown, Menu, Layout } from 'antd';
+import { Table, Card, Row, Col, Tag, Button, Typography, Avatar, Dropdown, Menu, Layout, Space } from 'antd';
 import { PlusCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 //import mockProjects from '../mock/projects';
@@ -9,8 +9,8 @@ const { Title } = Typography;
 function HomePage() {
     const [projects, setProjects] = useState([]);
     const navigate = useNavigate();
-    const email = localStorage.getItem('email') || 'User';
-    const namePart = email.split('@')[0] || 'U';
+    const userName = localStorage.getItem('userName') || 'User';
+    const namePart = userName.trim();
 
 
     useEffect(() => {
@@ -62,7 +62,15 @@ function HomePage() {
         {
             title: 'High Risk',
             dataIndex: ['scanResult', 'highRiskCount'],
-            render: (count) => count ?? '-',
+            render: (count) => {
+                if (count === null || count === undefined) return '-';
+                return (
+                    <Space>
+                        <span>{count}</span>
+                        {count > 0 && <Tag color="red">DANGER</Tag>}
+                    </Space>
+                );
+            },
         },
         {
             title: 'Dependencies',
@@ -157,7 +165,7 @@ function HomePage() {
                             columns={columns}
                             dataSource={projects}
                             pagination={{
-                                pageSize: 5,
+                                pageSize: 10,
                                 position: ['bottomCenter'],
                                 className: 'custom-pagination',
                             }}

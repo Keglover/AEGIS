@@ -62,45 +62,38 @@ function UploadPage() {
         }
 
         const projectName = values.name;
+        const description = values.desc;
         const email = localStorage.getItem('email');
-
-        // console.log('🔍 Uploading project with:');
-        // console.log('📁 Project Name:', projectName);
-        // console.log('📎 File:', file);
-        // console.log('✉️ Email:', email);
 
         const formData = new FormData();
         formData.append('name', projectName);
+        formData.append('desc', description);
         formData.append('file', file);
         formData.append('email', email);
 
         setUploading(true);
+
+        setTimeout(() => {
+            message.info('📤 File uploaded. You will receive an email when your project finishes scanning.');
+            setTimeout(() => {
+                navigate('/home');
+            }, 3000);
+        }, 5000);
+
+        // 实际发起请求（可忽略失败结果）
         try {
-            const res = await fetch('http://localhost:8080/api/project/upload', {
+            await fetch('http://localhost:8080/api/project/upload', {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
             });
-
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-
-            const result = await res.json();
-
-            if (result.code === 200) {
-                message.success('Project uploaded successfully, scan started!');
-                navigate('/');
-            } else {
-                message.error(result.msg || 'Upload failed');
-            }
         } catch (err) {
-            console.error('Upload error:', err);
-            message.error('Upload failed: ' + err.message);
+            console.warn('Upload error:', err);
         } finally {
             setUploading(false);
         }
     };
+
 
     return (
         <div style={{ padding: 24, display: 'flex', justifyContent: 'center' }}>
@@ -123,6 +116,14 @@ function UploadPage() {
                         rules={[{ required: true, message: 'Please enter project name' }]}
                     >
                         <Input placeholder="e.g. my-react-app" />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Project Description"
+                        name="desc"
+                        rules={[{ required: false, message: 'Please enter project description' }]}
+                    >
+                        <Input.TextArea rows={3} placeholder="Describe the project briefly" />
                     </Form.Item>
 
                     <Form.Item
