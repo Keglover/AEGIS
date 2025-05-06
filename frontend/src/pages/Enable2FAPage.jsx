@@ -79,11 +79,14 @@ function Enable2FAPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email }),
                 });
+                localStorage.setItem('userId', result.data.userId);
+                localStorage.setItem('email', email);
+                localStorage.setItem('user_name', result.data.userName)
                 const enableResult = await enableRes.json();
 
                 if (enableResult.code === 200) {
                     message.success('2FA successfully enabled!');
-                    setTimeout(() => navigate('/login'), 1500);
+                    setTimeout(() => navigate('/home'), 1500);
                 } else {
                     message.error(enableResult.msg || '2FA verification succeeded, but enabling failed.');
                 }

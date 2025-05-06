@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Card, Row, Col, Tag, Button, Typography, Space } from 'antd';
-import { UploadOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { Table, Card, Row, Col, Tag, Button, Typography, Avatar, Dropdown, Menu, Layout } from 'antd';
+import { PlusCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import mockProjects from '../mock/projects';
-import { Layout, Menu } from 'antd';
+//import mockProjects from '../mock/projects';
 const { Header, Content } = Layout;
 const { Title } = Typography;
 
 function HomePage() {
     const [projects, setProjects] = useState([]);
     const navigate = useNavigate();
+    const email = localStorage.getItem('email') || 'User';
+    const namePart = email.split('@')[0] || 'U';
+
 
     useEffect(() => {
         fetch('http://localhost:8080/api/project/list')
@@ -21,6 +23,20 @@ function HomePage() {
             });
         //setProjects(mockProjects);
     }, []);
+
+    const menu = (
+        <Menu>
+            <Menu.Item key="logout">
+                <Button type="primary" danger block onClick={() => {
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('email');
+                    navigate('/login');
+                }}>
+                    Logout
+                </Button>
+            </Menu.Item>
+        </Menu>
+    );
 
     const countByStatus = (status) =>
         projects.filter((p) => p.status === status).length;
@@ -74,9 +90,22 @@ function HomePage() {
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
-            <Header style={{ background: '#001529' }}>
-                <div style={{ color: 'white', fontSize: '20px' }}>🛡️ Aegis Dependency Scanner</div>
+            <Header style={{ background: '#001529', padding: '0 24px' }}>
+                <Row justify="space-between" align="middle">
+                    <div style={{ color: 'white', fontSize: '20px' }}>
+                        🛡️ Aegis Dependency Scanner
+                    </div>
+                    <Dropdown overlay={menu} placement="bottomRight">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                            <Avatar style={{ backgroundColor: '#1890ff' }}>
+                                {namePart[0].toUpperCase()}
+                            </Avatar>
+                            <span style={{ color: 'white' }}>{namePart}</span>
+                        </div>
+                    </Dropdown>
+                </Row>
             </Header>
+
 
             <Content style={{padding: '24px', background: '#f5f5f5'}}>
                 <div style={{padding: '24px'}}>
