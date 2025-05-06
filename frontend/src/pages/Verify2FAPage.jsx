@@ -29,6 +29,7 @@ function Verify2FAPage() {
             if (res.code === 200) {
                 localStorage.setItem('userId', res.data.userId);
                 localStorage.setItem('email', email);
+                localStorage.setItem('userName', res.data.userName);
                 message.success('2FA verification successful!');
                 navigate('/home'); // 或你自定义的首页路径
             } else {

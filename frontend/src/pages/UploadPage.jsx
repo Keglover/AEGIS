@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Button, Form, Input, Typography, message, Card } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { Upload, Button, Form, Input, Typography, message, Card, Space } from 'antd';
+import { UploadOutlined, InboxOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
+const { Dragger } = Upload;
 
 function UploadPage() {
     const [file, setFile] = useState(null);
@@ -19,28 +20,59 @@ function UploadPage() {
         }
     }, [form]);
 
-    const handleFileChange = ({ file, fileList }) => {
-        setFileList(fileList);
-        if (file.status !== 'removed') {
-            setFile(file.originFileObj);
-            // 手动设置表单字段值
-            form.setFieldsValue({ file: file.originFileObj });
-        } else {
+    const handleFileChange = ({ fileList: newFileList }) => {
+        const latestFile = newFileList[0];
+
+        if (!latestFile) {
             setFile(null);
-            form.setFieldsValue({ file: null });
+            setFileList([]);
+            form.setFieldsValue({ file: [] });
+            return;
         }
+
+        const isJson = latestFile.type === 'application/json' || latestFile.name.toLowerCase().endsWith('.json');
+        const isXml = latestFile.type === 'application/xml' || latestFile.type === 'text/xml' || latestFile.name.toLowerCase().endsWith('.xml');
+
+        if (!isJson && !isXml) {
+            message.error('Please upload a JSON or XML file!');
+            setFile(null);
+            setFileList([]);
+            form.setFieldsValue({ file: [] });
+            return;
+        }
+
+        if (latestFile.size > 10 * 1024 * 1024) {
+            message.error('File size cannot exceed 10MB!');
+            setFile(null);
+            setFileList([]);
+            form.setFieldsValue({ file: [] });
+            return;
+        }
+
+        setFile(latestFile.originFileObj);
+        setFileList([latestFile]);
+        form.setFieldsValue({ file: [latestFile] });
+        message.success('File selected, please click upload button to continue');
     };
 
     const handleFinish = async (values) => {
         if (!file) {
-            message.warning('Please upload a file.');
+            message.warning('Please select a file first');
             return;
         }
 
+        const projectName = values.name;
+        const email = localStorage.getItem('email');
+
+        // console.log('🔍 Uploading project with:');
+        // console.log('📁 Project Name:', projectName);
+        // console.log('📎 File:', file);
+        // console.log('✉️ Email:', email);
+
         const formData = new FormData();
-        formData.append('name', values.name);
+        formData.append('name', projectName);
         formData.append('file', file);
-        formData.append('email', localStorage.getItem('email'));
+        formData.append('email', email);
 
         setUploading(true);
         try {
@@ -57,7 +89,7 @@ function UploadPage() {
             const result = await res.json();
 
             if (result.code === 200) {
-                message.success('Project uploaded and scan started!');
+                message.success('Project uploaded successfully, scan started!');
                 navigate('/');
             } else {
                 message.error(result.msg || 'Upload failed');
@@ -72,12 +104,13 @@ function UploadPage() {
 
     return (
         <div style={{ padding: 24, display: 'flex', justifyContent: 'center' }}>
-            <Card style={{ width: 500 }}>
+            <Card style={{ width: 600 }}>
                 <Title level={3} style={{ textAlign: 'center' }}>Upload New Project</Title>
                 <Form
                     layout="vertical"
                     onFinish={handleFinish}
                     form={form}
+                    initialValues={{ file: [] }}
                     onFinishFailed={({ errorFields }) => {
                         errorFields.forEach(field => {
                             message.error(field.errors[0]);
@@ -101,21 +134,29 @@ function UploadPage() {
                         }]}
                         valuePropName="fileList"
                         getValueFromEvent={(e) => {
-                            if (Array.isArray(e)) {
-                                return e;
-                            }
-                            return e && e.fileList;
+                            if (Array.isArray(e)) return e;
+                            return e?.fileList || [];
                         }}
                     >
-                        <Upload
+                        <Dragger
                             beforeUpload={() => false}
                             maxCount={1}
                             fileList={fileList}
                             onChange={handleFileChange}
-                            accept=".json"
+                            accept=".json,.xml"
+                            showUploadList={true}
                         >
-                            <Button icon={<UploadOutlined />}>Select File</Button>
-                        </Upload>
+                            <p className="ant-upload-drag-icon">
+                                <InboxOutlined />
+                            </p>
+                            <p className="ant-upload-text">Click or drag file to this area to upload</p>
+                            <p className="ant-upload-hint">
+                                <Space direction="vertical" size="small">
+                                    <Text type="secondary">Support for JSON and XML files</Text>
+                                    <Text type="secondary">File size limit: 10MB</Text>
+                                </Space>
+                            </p>
+                        </Dragger>
                     </Form.Item>
 
                     <Form.Item name="email" hidden>
@@ -128,9 +169,10 @@ function UploadPage() {
                             htmlType="submit"
                             block
                             loading={uploading}
-                            disabled={uploading}
+                            disabled={uploading || !file}
+                            icon={<UploadOutlined />}
                         >
-                            Upload & Scan
+                            {uploading ? 'Uploading...' : 'Upload & Scan'}
                         </Button>
                     </Form.Item>
                 </Form>
