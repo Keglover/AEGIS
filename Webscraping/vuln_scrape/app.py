@@ -10,13 +10,19 @@ from scrapy.crawler import CrawlerProcess
 from scrapy import Spider
 from urllib.parse import quote_plus
 from vuln_scrape.spiders.spider_vuln import CveDetailsSpider as VulnSpider
+
 from astrapy import DataAPIClient
+
+from langchain.embeddings import OpenAIEmbeddings
 
 load_dotenv()
 
 ASTRA_DB_BASE_URL = os.getenv("ASTRA_DB_BASE_URL")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
-
+EMBEDDING_CHUNK_SIZE = 1000
+ASTRA_COLLECTION_NAME = "full_vulns_test_3"
+PROJECT_ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "vuln_scrape"))
 ####################
 #  Helper Methods  #
 ####################
@@ -26,10 +32,15 @@ def run_spider(techs):
         "scrapy", "crawl", "vuln_spider",
         "-a", f"techs={','.join(techs)}"
     ]
-    subprocess.run(cmd, check=True)
+    # # point at the folder containing scrapy.cfg
+    project_root = os.getenv(
+        "SCRAPY_PROJECT_ROOT",
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "vuln_scrape"))
+    )
+    subprocess.run(cmd, cwd=project_root, check=True)
     
     
-def jl_to_json_array(jl_path="vulnerabilities.jl", json_path="vulnerabilities.json"):
+def jl_to_json_array(jl_path=PROJECT_ROOT+"/vulnerabilities.jl", json_path=PROJECT_ROOT+"/vulnerabilities.json"):
     """Convert JSON-lines file into a single JSON array and return it."""
     arr = []
     with open(jl_path, "r", encoding="utf8") as f:
@@ -40,15 +51,18 @@ def jl_to_json_array(jl_path="vulnerabilities.jl", json_path="vulnerabilities.js
     return arr
 
 def upload_to_astra(data):
-    """Insert only new records into Astra DB collection and generate vector embeddings."""
+    """Insert only new records into Astra DB collection, embedding text in chunks using OpenAIEmbeddings."""
+    # Initialize embeddings client
+    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+
     client = DataAPIClient()
     database = client.get_database(
         ASTRA_DB_BASE_URL,
         token=ASTRA_DB_APPLICATION_TOKEN,
     )
-    collection = database.get_collection("vuln_test_3")
+    collection = database.get_collection(ASTRA_COLLECTION_NAME)
 
-    # Fetch existing names
+    # Identify existing records by name
     existing_docs = collection.find(
         filter={},
         projection=['name']
@@ -61,19 +75,35 @@ def upload_to_astra(data):
         return {'inserted_count': 0, 'message': 'No new records.'}
 
     inserted_count = 0
-    for item in new_records:
-        # Prepare document with reserved $vectorize for automatic embeddings
-        doc = {
-            'tech': item['tech'],
-            'cve_link': item['cve_link'],
-            'name': item['name'],
-            'summary': item['summary'],
-            'cvss_v3_score': item['cvss_v3_score'],
-            '$vectorize': item['summary']  # use summary text to generate embeddings
-        }
-        result = collection.insert_one(doc)
-        # result.inserted_id is available
-        inserted_count += 1
+    # Process in chunks for embedding
+    for chunk_start in range(0, len(new_records), EMBEDDING_CHUNK_SIZE):
+        chunk = new_records[chunk_start : chunk_start + EMBEDDING_CHUNK_SIZE]
+        # Prepare strings to embed (combine name and summary)
+        to_embed = [
+            json.dumps({'name': row['name'], 'summary': row['summary']})
+            for row in chunk
+        ]
+        # Generate embedding vectors
+        embedding_vectors = embeddings.embed_documents(to_embed)
+
+        # Build documents with embeddings
+        docs_to_insert = []
+        for row, vector in zip(chunk, embedding_vectors):
+            page_content = json.dumps(row)
+            doc = {
+                '$vector': vector,
+                'tech': row['tech'],
+                'cve_link': row['cve_link'],
+                'name': row['name'],
+                'summary': row['summary'],
+                'cvss_v3_score': row['cvss_v3_score'],
+                'page_content': page_content,
+            }
+            docs_to_insert.append(doc)
+
+        # Bulk insert this chunk
+        res = collection.insert_many(docs_to_insert)
+        inserted_count += len(res.inserted_ids)
 
     return {'inserted_count': inserted_count}
 
