@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import IntroPage from './pages/IntroPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Verify2FAPage from './pages/Verify2FAPage';
@@ -15,6 +16,7 @@ function App() {
     return (
         <Router>
             <Routes>
+                <Route path="/intro" element={<IntroPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/verify2fa" element={<Verify2FAPage />} />
@@ -23,8 +25,8 @@ function App() {
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/projects/:id" element={<ProjectDetailPage />} />
-                <Route path="/" element={<Navigate to="/login" />} />
-                <Route path="*" element={<LoginPage />} />
+                <Route path="/" element={<Navigate to="/intro" />} />
+                <Route path="*" element={<IntroPage />} />
             </Routes>
         </Router>
     );
