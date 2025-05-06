@@ -101,17 +101,18 @@ public class UserService {
     }
 
 
-    public ResponseDTO<Map<String, Long>> verify2FACode(String email, String code){
+    public ResponseDTO<Map<String, Object>> verify2FACode(String email, String code){
         Optional<User> tempUser = userRepository.findByEmail(email);
         if (tempUser.isEmpty()) {
             throw new IllegalArgumentException("User not exists: " + email);
         }
-        Map<String, Long> map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
 
         String hashedSecret = tempUser.get().getTwoFactorSecret();
         String decodedSecret = aesUtil.decrypt(hashedSecret);
         if(twoFactorService.verifyCode(decodedSecret, code)){
             map.put("userId", tempUser.get().getId());
+            map.put("userName", tempUser.get().getUsername());
             return ResponseDTO.ok(map);
         }else{
             return ResponseDTO.fail(HTTPCode.BAD_REQUEST);
