@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -260,24 +261,27 @@ public class DependencyScanService {
     }
 
     public List<ProjectSummaryVO> getAllProjectSummaries() {
-        return projectRepository.findAll().stream().map(project -> {
-            ProjectSummaryVO vo = new ProjectSummaryVO();
-            vo.setId(project.getId());
-            vo.setName(project.getName());
-            vo.setStatus(project.getStatus());
-            vo.setUploadTime(project.getUploadTime());
+        return projectRepository.findAll(Sort.by(Sort.Direction.DESC, "uploadTime"))
+                .stream()
+                .map(project -> {
+                    ProjectSummaryVO vo = new ProjectSummaryVO();
+                    vo.setId(project.getId());
+                    vo.setName(project.getName());
+                    vo.setStatus(project.getStatus());
+                    vo.setUploadTime(project.getUploadTime());
 
-            DependencyScanResult result = project.getScanResult();
-            if (result != null) {
-                ScanSummaryVO scan = new ScanSummaryVO();
-                scan.setTotalDependencies(result.getTotalDependencies());
-                scan.setHighRiskCount(result.getHighRiskCount());
-                scan.setOutdatedCount(result.getOutdatedCount());
-                scan.setKnownVulnerabilityCount(result.getKnownVulnerabilityCount());
-                vo.setScanResult(scan);
-            }
+                    DependencyScanResult result = project.getScanResult();
+                    if (result != null) {
+                        ScanSummaryVO scan = new ScanSummaryVO();
+                        scan.setTotalDependencies(result.getTotalDependencies());
+                        scan.setHighRiskCount(result.getHighRiskCount());
+                        scan.setOutdatedCount(result.getOutdatedCount());
+                        scan.setKnownVulnerabilityCount(result.getKnownVulnerabilityCount());
+                        vo.setScanResult(scan);
+                    }
 
-            return vo;
-        }).toList();
+                    return vo;
+                })
+                .toList();
     }
 }
