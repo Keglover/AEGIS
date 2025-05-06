@@ -1,0 +1,8 @@
+flask==3.0.2
+scrapy==2.11.1
+python-dotenv==1.0.1
+requests==2.31.0
+langchain==0.1.12
+openai==1.14.0
+astrapy==0.7.4 
+itemadapter~=0.11.0
