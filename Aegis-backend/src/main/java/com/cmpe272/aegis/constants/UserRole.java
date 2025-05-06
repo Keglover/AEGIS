@@ -8,8 +8,7 @@ package com.cmpe272.aegis.constants;
 
 public enum UserRole {
     ADMIN(0),
-    MANAGER(1),
-    USER(2);
+    USER(1);
 
     private final int role;
     UserRole(int role) {

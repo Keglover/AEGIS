@@ -2,6 +2,7 @@ package com.cmpe272.aegis.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -17,6 +18,7 @@ import java.util.Random;
  * @description:TODO
  * @date :2025/04/28 17:55
  */
+@Slf4j
 @Service
 public class MailService {
 
@@ -32,7 +34,7 @@ public class MailService {
         String verificationCode = generateSixDigitString();
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
+        log.info(toEmail+", "+verificationCode);
         helper.setFrom(mailAddress);
         helper.setTo(toEmail);
         helper.setSubject("Aegis Cyber Alert - Email Verification Code");
@@ -55,6 +57,28 @@ public class MailService {
         Random random = new Random();
         int number = random.nextInt(1000000);
         return String.format("%06d", number);
+    }
+
+    public void sendProjectCompletionEmail(String toEmail, String projectName, LocalDateTime completedTime) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+        helper.setFrom(mailAddress);
+        helper.setTo(toEmail);
+        helper.setSubject("Aegis Cyber Alert - Project Scan Completed");
+
+        String formattedTime = completedTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        String content = "<p>Dear user,</p>"
+                + "<p>Your project <b>" + projectName + "</b> has been successfully scanned by <b>Aegis Cyber Alert</b>.</p>"
+                + "<p><b>Completion Time:</b> " + formattedTime + "</p>"
+                + "<br>"
+                + "<p>You can now log in to view the scan report, risk assessment, and recommendations.</p>"
+                + "<p>If you did not initiate this project, please contact support immediately.</p>"
+                + "<br><p>Regards,<br>Aegis Security Team</p>";
+
+        helper.setText(content, true);
+        mailSender.send(message);
     }
 
 }
