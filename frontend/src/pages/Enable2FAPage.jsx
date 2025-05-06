@@ -7,6 +7,7 @@ import {
     Card,
     Space,
     message,
+    Spin
 } from 'antd';
 import { QRCodeCanvas } from 'qrcode.react';
 
@@ -73,8 +74,19 @@ function Enable2FAPage() {
             });
             const result = await res.json();
             if (result.code === 200) {
-                message.success('2FA successfully enabled!');
-                setTimeout(() => navigate('/login'), 1500);
+                const enableRes = await fetch('http://localhost:8080/auth/enable_2FA', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email }),
+                });
+                const enableResult = await enableRes.json();
+
+                if (enableResult.code === 200) {
+                    message.success('2FA successfully enabled!');
+                    setTimeout(() => navigate('/login'), 1500);
+                } else {
+                    message.error(enableResult.msg || '2FA verification succeeded, but enabling failed.');
+                }
             } else {
                 message.error(result.msg || 'Invalid code. Please try again.');
             }
@@ -96,7 +108,11 @@ function Enable2FAPage() {
                     </Paragraph>
                     <Input value={email} disabled />
 
-                    {qrUrl && (
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                            <Spin tip="Loading QR Code..." />
+                        </div>
+                    ) : qrUrl ? (
                         <>
                             <Paragraph>
                                 Scan this QR code using your <Text strong>Google Authenticator</Text> app:
@@ -123,7 +139,10 @@ function Enable2FAPage() {
                                 Verify & Enable 2FA
                             </Button>
                         </>
+                    ) : (
+                        <Text type="danger">Failed to load QR code.</Text>
                     )}
+
                 </Space>
             </Card>
         </div>

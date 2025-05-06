@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Typography, message } from 'antd';
+import { Form, Input, Button, Typography, message, notification } from 'antd';
 import { login } from '../api/auth';
 
 const { Title } = Typography;
@@ -19,8 +19,16 @@ function LoginPage() {
                 navigate('/verify2fa', { state: { email: values.email } });
             } else if (res.code === 400 && res.msg === 'Need to enable 2FA before sign in') {
                 navigate('/need-2fa', { state: { email: values.email } });
+            } else if (res.code === 404) {
+                notification.error({
+                    message: 'Login Failed',
+                    description: 'User not found',
+                });
             } else {
-                message.error(res.msg || 'Login failed');
+                notification.error({
+                    message: res.msg,
+                    description: 'Login failed',
+                });
             }
         } catch (error) {
             message.error('Network error or server not responding');
@@ -29,6 +37,7 @@ function LoginPage() {
             setLoading(false);
         }
     };
+
 
     return (
         <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh', alignItems: 'center' }}>
