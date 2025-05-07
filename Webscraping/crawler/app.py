@@ -22,7 +22,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
 EMBEDDING_CHUNK_SIZE = 1000
 ASTRA_COLLECTION_NAME = "full_vulns_test_3"
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".", "vuln_scrape"))
+
+
 ####################
 #  Helper Methods  #
 ####################
@@ -38,9 +40,9 @@ def run_spider(techs):
         os.path.abspath(os.path.join(os.path.dirname(__file__), ".", "vuln_scrape"))
     )
     subprocess.run(cmd, cwd=project_root, check=True)
-    
-    
-def jl_to_json_array(jl_path=PROJECT_ROOT+"/vulnerabilities.jl", json_path=PROJECT_ROOT+"/vulnerabilities.json"):
+
+
+def jl_to_json_array(jl_path=PROJECT_ROOT + "/vulnerabilities.jl", json_path=PROJECT_ROOT + "/vulnerabilities.json"):
     """Convert JSON-lines file into a single JSON array and return it."""
     arr = []
     with open(jl_path, "r", encoding="utf8") as f:
@@ -49,6 +51,7 @@ def jl_to_json_array(jl_path=PROJECT_ROOT+"/vulnerabilities.jl", json_path=PROJE
     with open(json_path, "w", encoding="utf8") as f:
         json.dump(arr, f, indent=2)
     return arr
+
 
 def upload_to_astra(data):
     """Insert only new records into Astra DB collection, embedding text in chunks using OpenAIEmbeddings."""
@@ -77,7 +80,7 @@ def upload_to_astra(data):
     inserted_count = 0
     # Process in chunks for embedding
     for chunk_start in range(0, len(new_records), EMBEDDING_CHUNK_SIZE):
-        chunk = new_records[chunk_start : chunk_start + EMBEDDING_CHUNK_SIZE]
+        chunk = new_records[chunk_start: chunk_start + EMBEDDING_CHUNK_SIZE]
         # Prepare strings to embed (combine name and summary)
         to_embed = [
             json.dumps({'name': row['name'], 'summary': row['summary']})
@@ -107,17 +110,19 @@ def upload_to_astra(data):
 
     return {'inserted_count': inserted_count}
 
+
 ##############
 #  Flask App #
 ##############
 
 app = Flask(__name__)
 
+
 @app.route("/vulns", methods=["POST"])
 def vulnerabilities_endpoint():
     try:
         payload = request.get_json(force=True)
-        techs   = payload.get("techs")
+        techs = payload.get("techs")
         if not techs or not isinstance(techs, list):
             return jsonify({"error": "Must provide a list of technologies"}), 400
 
@@ -129,19 +134,22 @@ def vulnerabilities_endpoint():
         # 3) Upload to Astra DB
         result = upload_to_astra(data)
         print(result)
-        
+
         return jsonify({"status": "success", "message": "Scan completed"}), 200
     except Exception as e:
         print(f"Error in vulnerabilities_endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/ping", methods=["GET"])
 def ping():
     return jsonify({"message": "Crawler is alive"}), 200
 
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "healthy"}), 200
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
