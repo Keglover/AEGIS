@@ -55,8 +55,9 @@ public class UserController {
     }
 
     @PostMapping("/enable_2FA")
-    public void enable2FA(@RequestBody Map<String, String> map){
+    public ResponseDTO<String> enable2FA(@RequestBody Map<String, String> map){
         userService.enable2FA(map.get("email"));
+        return ResponseDTO.ok();
     }
 
 
