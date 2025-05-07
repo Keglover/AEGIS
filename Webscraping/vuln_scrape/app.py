@@ -115,23 +115,33 @@ app = Flask(__name__)
 
 @app.route("/vulns", methods=["POST"])
 def vulnerabilities_endpoint():
-    payload = request.get_json(force=True)
-    techs   = payload.get("techs")
-    if not techs or not isinstance(techs, list):
-        return jsonify({"error": "Must provide a list of technologies"}), 400
+    try:
+        payload = request.get_json(force=True)
+        techs   = payload.get("techs")
+        if not techs or not isinstance(techs, list):
+            return jsonify({"error": "Must provide a list of technologies"}), 400
 
-    # 1) Run the spider
-    run_spider(techs)
-    # 2) Convert JL → JSON array
-    data = jl_to_json_array()
+        # 1) Run the spider
+        run_spider(techs)
+        # 2) Convert JL → JSON array
+        data = jl_to_json_array()
 
-    # # 3) Upload to Astra DB
-    result = upload_to_astra(data)
-    print(result)
-    
-    #result should return 200
-    return '', 200
+        # 3) Upload to Astra DB
+        result = upload_to_astra(data)
+        print(result)
+        
+        return jsonify({"status": "success", "message": "Scan completed"}), 200
+    except Exception as e:
+        print(f"Error in vulnerabilities_endpoint: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
+@app.route("/ping", methods=["GET"])
+def ping():
+    return jsonify({"message": "Crawler is alive"}), 200
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "healthy"}), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001)
+    app.run(host="0.0.0.0", port=5001, debug=True)
