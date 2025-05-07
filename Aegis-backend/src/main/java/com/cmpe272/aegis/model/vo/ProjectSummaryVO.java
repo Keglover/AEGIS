@@ -10,6 +10,7 @@ public class ProjectSummaryVO {
     private Long id;
     private String name;
     private ProjectStatus status;
+
     private LocalDateTime uploadTime;
     private ScanSummaryVO scanResult;
 }

@@ -59,14 +59,14 @@ public class MailService {
         return String.format("%06d", number);
     }
 
-    public void sendProjectCompletionEmail(String toEmail, String projectName, LocalDateTime completedTime) throws MessagingException {
+    public void sendProjectCompletionEmail(String toEmail, String projectName) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
         helper.setFrom(mailAddress);
         helper.setTo(toEmail);
         helper.setSubject("Aegis Cyber Alert - Project Scan Completed");
-
+        LocalDateTime completedTime = LocalDateTime.now();
         String formattedTime = completedTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         String content = "<p>Dear user,</p>"
@@ -80,5 +80,28 @@ public class MailService {
         helper.setText(content, true);
         mailSender.send(message);
     }
+
+    public void sendProjectFailureEmail(String toEmail, String projectName, String reason) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+        helper.setFrom(mailAddress);
+        helper.setTo(toEmail);
+        helper.setSubject("Aegis Cyber Alert - Project Scan Failed");
+        LocalDateTime failedTime = LocalDateTime.now();
+        String formattedTime = failedTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        String content = "<p>Dear user,</p>"
+                + "<p>Unfortunately, your project <b>" + projectName + "</b> failed to complete the scan on <b>Aegis Cyber Alert</b>.</p>"
+                + "<p><b>Failure Time:</b> " + formattedTime + "</p>"
+                + "<p><b>Reason:</b> " + reason + "</p>"
+                + "<br>"
+                + "<p>Please try re-uploading the project. If the issue persists, contact our support team for assistance.</p>"
+                + "<br><p>Regards,<br>Aegis Security Team</p>";
+
+        helper.setText(content, true);
+        mailSender.send(message);
+    }
+
 
 }

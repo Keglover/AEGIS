@@ -2,6 +2,7 @@ package com.cmpe272.aegis.model;
 
 import com.cmpe272.aegis.constants.RiskLevel;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Entity
@@ -19,7 +20,11 @@ public class ScannedDependency {
 
     private String latestVersion;
 
+    @JsonProperty("isOutdated")
     private boolean isOutdated;
+
+    @Column
+    private String cveUrl;
 
     @Enumerated(EnumType.STRING)
     private RiskLevel riskLevel;

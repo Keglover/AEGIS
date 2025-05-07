@@ -13,7 +13,6 @@ public class ProjectDetailVO {
     private String fileName;
     private ProjectStatus status;
     private LocalDateTime uploadTime;
-
     private ScanSummaryVO scanResult;
     private List<DependencyVO> dependencies;
 }

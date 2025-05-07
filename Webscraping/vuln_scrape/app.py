@@ -11,7 +11,7 @@ from scrapy import Spider
 from urllib.parse import quote_plus
 from vuln_scrape.spiders.spider_vuln import CveDetailsSpider as VulnSpider
 
-from astrapy.db import AstraDB
+from astrapy import DataAPIClient
 
 from langchain.embeddings import OpenAIEmbeddings
 
@@ -55,7 +55,7 @@ def upload_to_astra(data):
     # Initialize embeddings client
     embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
-    client = AstraDB()
+    client = DataAPIClient()
     database = client.get_database(
         ASTRA_DB_BASE_URL,
         token=ASTRA_DB_APPLICATION_TOKEN,

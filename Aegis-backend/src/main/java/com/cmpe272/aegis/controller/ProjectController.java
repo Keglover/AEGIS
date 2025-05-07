@@ -39,9 +39,7 @@ public class ProjectController {
         log.info("Start upload file");
         try {
             String content = new String(file.getBytes());
-            Long projectId = dependencyScanService.createAndScanProject(projectName, file.getOriginalFilename(), content);
-            LocalDateTime completedTime = LocalDateTime.now();
-            mailService.sendProjectCompletionEmail(email, projectName, completedTime);
+            Long projectId = dependencyScanService.createAndScanProject(projectName, file.getOriginalFilename(), content, email);
             return ResponseDTO.ok("Project created and scan started.", projectId);
         } catch (Exception e) {
             log.error("Project upload or scan failed", e);

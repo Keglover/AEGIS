@@ -11,5 +11,6 @@ public class DependencyVO {
     private String latestVersion;
     private boolean outdated;
     private RiskLevel riskLevel;
+    private String cveUrl;
     private int knownVulnerabilities;
 }

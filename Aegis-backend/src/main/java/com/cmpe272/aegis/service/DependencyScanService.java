@@ -9,7 +9,9 @@ import com.cmpe272.aegis.model.vo.ProjectSummaryVO;
 import com.cmpe272.aegis.model.vo.ScanSummaryVO;
 import com.cmpe272.aegis.repository.*;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,8 @@ public class DependencyScanService {
     private ScannedDependencyRepository scannedDependencyRepository;
     @Autowired
     private DependencyScanResultRepository scanResultRepository;
+    @Autowired
+    private MailService mailService;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -57,29 +61,34 @@ public class DependencyScanService {
     }
 
     @Transactional
-    public Long createAndScanProject(String name, String fileName, String fileContent) {
+    public Long createAndScanProject(String projectName, String fileName, String fileContent, String notifyEmail) throws MessagingException {
         Project project = new Project();
-        project.setName(name);
+        project.setName(projectName);
         project.setFileName(fileName);
         project.setStatus(ProjectStatus.PENDING);
         project = projectRepository.save(project);
 
-        scanDependencies(project, fileContent);
+        scanDependencies(project, fileContent, notifyEmail);
+
         return project.getId();
     }
 
-    private void scanDependencies(Project project, String fileContent) {
+    private void scanDependencies(Project project, String fileContent, String notifyEmail) {
         try {
             project.setStatus(ProjectStatus.SCANNING);
             projectRepository.save(project);
 
-            List<String> techs = extractDependencyNames(project.getFileName(), fileContent);
+            Map<String, String> depsWithVersions = extractDependenciesWithVersions(project.getFileName(), fileContent);
+            List<String> namesOnly = new ArrayList<>(depsWithVersions.keySet());
+            List<String> nameAndVersion = depsWithVersions.entrySet().stream()
+                    .map(e -> e.getValue().isEmpty() ? e.getKey() : e.getKey() + "@" + e.getValue())
+                    .collect(Collectors.toList());
 
-            if (!sendToCrawlerService(techs)) {
+            if (!sendToCrawlerService(namesOnly)) {
                 throw new RuntimeException("Crawler service failed.");
             }
 
-            List<ScannedDependency> enhancedDeps = queryAstraLLM(techs);
+            List<ScannedDependency> enhancedDeps = queryAstraLLM(nameAndVersion, notifyEmail, project.getName());
             enhancedDeps.forEach(dep -> dep.setProject(project));
             scannedDependencyRepository.saveAll(enhancedDeps);
 
@@ -89,7 +98,6 @@ public class DependencyScanService {
             project.setStatus(ProjectStatus.COMPLETED);
             projectRepository.save(project);
 
-
         } catch (Exception e) {
             project.setStatus(ProjectStatus.FAILED);
             projectRepository.save(project);
@@ -98,27 +106,27 @@ public class DependencyScanService {
         }
     }
 
-    private List<String> extractDependencyNames(String fileName, String fileContent) {
+    private Map<String, String> extractDependenciesWithVersions(String fileName, String fileContent) {
         if (fileName.toLowerCase().endsWith(".json")) {
-            return extractFromPackageJson(fileContent);
+            return extractFromPackageJsonWithVersion(fileContent);
         } else if (fileName.toLowerCase().endsWith(".xml")) {
-            return extractFromPomXml(fileContent);
+            return extractFromPomXmlWithVersion(fileContent);
         }
         throw new IllegalArgumentException("Unsupported file type: " + fileName);
     }
 
-    private List<String> extractFromPackageJson(String fileContent) {
+    private Map<String, String> extractFromPackageJsonWithVersion(String fileContent) {
         JSONObject json = new JSONObject(fileContent);
-        Set<String> names = new HashSet<>();
+        Map<String, String> deps = new HashMap<>();
         Optional.ofNullable(json.optJSONObject("dependencies"))
-                .ifPresent(obj -> names.addAll(obj.keySet()));
+                .ifPresent(obj -> obj.keySet().forEach(k -> deps.put(k, obj.getString(k))));
         Optional.ofNullable(json.optJSONObject("devDependencies"))
-                .ifPresent(obj -> names.addAll(obj.keySet()));
-        return new ArrayList<>(names);
+                .ifPresent(obj -> obj.keySet().forEach(k -> deps.put(k, obj.getString(k))));
+        return deps;
     }
 
-    private List<String> extractFromPomXml(String fileContent) {
-        List<String> list = new ArrayList<>();
+    private Map<String, String> extractFromPomXmlWithVersion(String fileContent) {
+        Map<String, String> deps = new HashMap<>();
         try {
             var builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             var doc = builder.parse(new InputSource(new StringReader(fileContent)));
@@ -128,14 +136,15 @@ public class DependencyScanService {
                 Element dep = (Element) nodes.item(i);
                 String groupId = getText(dep, "groupId");
                 String artifactId = getText(dep, "artifactId");
+                String version = getText(dep, "version");
                 if (groupId != null && artifactId != null) {
-                    list.add(groupId + ":" + artifactId);
+                    deps.put(groupId + ":" + artifactId, version != null ? version : "");
                 }
             }
         } catch (Exception e) {
             log.error("Error parsing pom.xml", e);
         }
-        return list;
+        return deps;
     }
 
     private boolean sendToCrawlerService(List<String> techs) {
@@ -156,31 +165,33 @@ public class DependencyScanService {
         }
     }
 
-    private List<ScannedDependency> queryAstraLLM(List<String> techs) {
+    private List<ScannedDependency> queryAstraLLM(List<String> techs, String toEmail, String projectName) throws MessagingException {
         try {
             String prompt = """
-                Given the following tech stack: %s.
+            Given the following tech stack with versions: %s.
 
-                For each item, assess:
-                - currentVersion (string)
-                - latestVersion (string)
-                - isOutdated (true/false)
-                - knownVulnerabilities (int)
-                - riskLevel ("LOW", "MEDIUM", "HIGH")
+            For each item (package@version or groupId:artifactId@version), assess:
+            - currentVersion (string)
+            - latestVersion (string)
+            - isOutdated (true/false)
+            - knownVulnerabilities (int)
+            - riskLevel ("LOW", "MEDIUM", "HIGH")
+            - cveUrl (string)
 
-                Return a pure JSON array of objects like:
-                [
-                  {
-                    "packageName": "axios",
-                    "currentVersion": "0.19.0",
-                    "latestVersion": "1.4.0",
-                    "isOutdated": true,
-                    "riskLevel": "MEDIUM",
-                    "knownVulnerabilities": 2
-                  }
-                ]
-                Only output valid JSON.
-                """.formatted(String.join(", ", techs));
+            Return a pure JSON array of objects like:
+            [
+              {
+                "packageName": "axios",
+                "currentVersion": "0.19.0",
+                "latestVersion": "1.4.0",
+                "isOutdated": true,
+                "riskLevel": "MEDIUM",
+                "knownVulnerabilities": 2,
+                "cveUrl": "https://nvd.nist.gov/vuln/detail/CVE-2021-12345"
+              }
+            ]
+            Only output valid JSON.
+            """.formatted(String.join(", ", techs));
 
             JSONObject payload = new JSONObject();
             payload.put("input_value", prompt);
@@ -195,12 +206,39 @@ public class DependencyScanService {
             ResponseEntity<String> response = restTemplate.exchange(ASTRA_LLM_URL, HttpMethod.POST, entity, String.class);
 
             String body = response.getBody();
-            return objectMapper.readValue(body, new TypeReference<>() {});
+            JsonNode root = objectMapper.readTree(body);
+
+            // Navigate to the actual text response
+            JsonNode textNode = root
+                    .path("outputs").get(0)
+                    .path("outputs").get(0)
+                    .path("results")
+                    .path("message")
+                    .path("text");
+
+            if (textNode.isMissingNode()) {
+                throw new IllegalStateException("Failed to find LLM result text in response.");
+            }
+
+            String rawText = textNode.asText();
+
+            // Remove surrounding ```json ... ```
+            String cleanedJson = rawText
+                    .replaceAll("(?s)^```json\\s*", "") // remove leading ```json
+                    .replaceAll("\\s*```$", "");        // remove trailing ```
+
+            List<ScannedDependency> result = objectMapper.readValue(cleanedJson, new TypeReference<>() {});
+            mailService.sendProjectCompletionEmail(toEmail, projectName);
+            return result;
+
         } catch (Exception e) {
             log.error("Failed to query Astra LLM", e);
+            mailService.sendProjectFailureEmail(toEmail, projectName, e.getMessage());
             return List.of();
         }
     }
+
+
 
     private String getText(Element parent, String tag) {
         NodeList list = parent.getElementsByTagName(tag);
@@ -241,7 +279,6 @@ public class DependencyScanService {
             vo.setScanResult(scan);
         }
 
-        // Set dependencies
         List<DependencyVO> depVOs = scannedDependencyRepository.findByProjectId(project.getId())
                 .stream()
                 .map(d -> {
@@ -252,6 +289,7 @@ public class DependencyScanService {
                     dep.setLatestVersion(d.getLatestVersion());
                     dep.setOutdated(d.isOutdated());
                     dep.setRiskLevel(d.getRiskLevel());
+                    dep.setCveUrl(d.getCveUrl());
                     dep.setKnownVulnerabilities(d.getKnownVulnerabilities());
                     return dep;
                 }).toList();
