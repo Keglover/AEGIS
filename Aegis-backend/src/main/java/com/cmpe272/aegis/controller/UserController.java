@@ -45,7 +45,6 @@ public class UserController {
         return userService.verifyEmail(map.get("email"), map.get("code"));
     }
 
-
     @PostMapping("/generate_2FA")
     public ResponseDTO<String> generate2FA(@RequestBody Map<String, String> map){
         return userService.generateUser2FACode(map.get("email"));
@@ -53,6 +52,11 @@ public class UserController {
     @PostMapping("/verify_2FA")
     public ResponseDTO<Map<String, Object>> verify2FA(@RequestBody Verify2FAForm form){
         return userService.verify2FACode(form.getEmail(), form.getCode());
+    }
+
+    @PostMapping("/enable_2FA")
+    public void enable2FA(@RequestBody Map<String, String> map){
+        userService.enable2FA(map.get("email"));
     }
 
 

@@ -96,7 +96,6 @@ public class UserService {
         String encryptedSecret = aesUtil.encrypt(secret);
         User user = tempUser.get();
         user.setTwoFactorSecret(encryptedSecret);
-        user.setTwoFactorEnabled(true);
         userRepository.save(user);
     }
 
@@ -145,5 +144,13 @@ public class UserService {
         userRepository.save(tempUser.get());
 
         return ResponseDTO.ok("Clean 2FA data, please reset your 2FA");
+    }
+
+    public void enable2FA(String email){
+        Optional<User> tempUser = userRepository.findByEmail(email);
+        User user = tempUser.get();
+        user.setTwoFactorEnabled(true);
+        userRepository.save(user);
+
     }
 }
