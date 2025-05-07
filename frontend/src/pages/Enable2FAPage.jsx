@@ -10,6 +10,7 @@ import {
     Spin
 } from 'antd';
 import { QRCodeCanvas } from 'qrcode.react';
+import { API_ENDPOINTS } from '../config'; // ✅ 引入 API 地址配置
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -34,7 +35,7 @@ function Enable2FAPage() {
         const fetchQRCode = async () => {
             setLoading(true);
             try {
-                const res = await fetch('http://localhost:8080/auth/generate_2FA', {
+                const res = await fetch(API_ENDPOINTS.AUTH.GENERATE_2FA, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email }),
@@ -67,22 +68,24 @@ function Enable2FAPage() {
 
         setVerifying(true);
         try {
-            const res = await fetch('http://localhost:8080/auth/verify_2FA', {
+            const res = await fetch(API_ENDPOINTS.AUTH.VERIFY_2FA, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, code }),
             });
             const result = await res.json();
             if (result.code === 200) {
-                const enableRes = await fetch('http://localhost:8080/auth/enable_2FA', {
+                const enableRes = await fetch(API_ENDPOINTS.AUTH.ENABLE_2FA, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email }),
                 });
+
+                const enableResult = await enableRes.json();
+
                 localStorage.setItem('userId', result.data.userId);
                 localStorage.setItem('email', email);
-                localStorage.setItem('user_name', result.data.userName)
-                const enableResult = await enableRes.json();
+                localStorage.setItem('user_name', result.data.userName);
 
                 if (enableResult.code === 200) {
                     message.success('2FA successfully enabled!');
@@ -106,9 +109,7 @@ function Enable2FAPage() {
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <Title level={3}>Enable Two-Factor Authentication</Title>
 
-                    <Paragraph>
-                        Your Email:
-                    </Paragraph>
+                    <Paragraph>Your Email:</Paragraph>
                     <Input value={email} disabled />
 
                     {loading ? (
@@ -145,7 +146,6 @@ function Enable2FAPage() {
                     ) : (
                         <Text type="danger">Failed to load QR code.</Text>
                     )}
-
                 </Space>
             </Card>
         </div>

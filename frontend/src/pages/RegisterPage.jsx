@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Typography, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-
+import { API_ENDPOINTS } from '../config'; // ✅ 使用你的 config
 const { Title } = Typography;
 
 function RegisterPage() {
@@ -10,7 +10,7 @@ function RegisterPage() {
     const [emailVerified, setEmailVerified] = useState(false);
     const [loadingSend, setLoadingSend] = useState(false);
     const [loadingVerify, setLoadingVerify] = useState(false);
-    const [countdown, setCountdown] = useState(0); // ⏱️ 倒计时
+    const [countdown, setCountdown] = useState(0);
 
     const handleSendCode = async () => {
         const email = form.getFieldValue('email');
@@ -21,7 +21,7 @@ function RegisterPage() {
 
         setLoadingSend(true);
         try {
-            const res = await fetch('http://localhost:8080/auth/send_verify_email', {
+            const res = await fetch(API_ENDPOINTS.AUTH.SEND_VERIFY_EMAIL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
@@ -29,8 +29,6 @@ function RegisterPage() {
             const result = await res.json();
             if (result.code === 200) {
                 message.success('Verification code sent to email.');
-
-                // ✅ 启动倒计时
                 setCountdown(60);
                 const timer = setInterval(() => {
                     setCountdown(prev => {
@@ -44,7 +42,7 @@ function RegisterPage() {
             } else {
                 message.error(result.msg || 'Failed to send code.');
             }
-        } catch (err) {
+        } catch {
             message.error('Error sending code.');
         } finally {
             setLoadingSend(false);
@@ -60,7 +58,7 @@ function RegisterPage() {
 
         setLoadingVerify(true);
         try {
-            const res = await fetch('http://localhost:8080/auth/verify_email', {
+            const res = await fetch(API_ENDPOINTS.AUTH.VERIFY_EMAIL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, code: verifyCode }),
@@ -72,7 +70,7 @@ function RegisterPage() {
             } else {
                 message.error(result.msg || 'Verification failed.');
             }
-        } catch (err) {
+        } catch {
             message.error('Error verifying email.');
         } finally {
             setLoadingVerify(false);
@@ -90,24 +88,27 @@ function RegisterPage() {
             return;
         }
 
-        const res = await fetch('http://localhost:8080/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: values.email,
-                userName: values.userName,
-                password1: values.password1,
-                password2: values.password2,
-                role: 'USER'
-            })
-        });
-
-        const result = await res.json();
-        if (result.code === 200) {
-            message.success('Registration successful!');
-            navigate('/login');
-        } else {
-            message.error(result.msg || 'Registration failed.');
+        try {
+            const res = await fetch(API_ENDPOINTS.AUTH.REGISTER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: values.email,
+                    userName: values.userName,
+                    password1: values.password1,
+                    password2: values.password2,
+                    role: 'USER'
+                }),
+            });
+            const result = await res.json();
+            if (result.code === 200) {
+                message.success('Registration successful!');
+                navigate('/login');
+            } else {
+                message.error(result.msg || 'Registration failed.');
+            }
+        } catch {
+            message.error('Server error during registration.');
         }
     };
 

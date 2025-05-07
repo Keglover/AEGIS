@@ -26,3 +26,22 @@ export async function verify2FA(data) {
     });
     return res.json();
 }
+
+
+export async function verifyEmail(data) {
+    const res = await fetch(API_ENDPOINTS.AUTH.VERIFY_EMAIL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    return res.json();
+}
+
+export async function sendEmailVerifyCode(data) {
+    const res = await fetch(API_ENDPOINTS.AUTH.SEND_VERIFY_EMAIL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    return res.json();
+}
