@@ -62,6 +62,18 @@ function ProjectDetailPage() {
       title: 'Vulnerabilities',
       dataIndex: 'knownVulnerabilities',
     },
+    {
+      title: 'CVE Link',
+      dataIndex: 'cveUrl',
+      render: (url) =>
+          url ? (
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                View CVE
+              </a>
+          ) : (
+              '-'
+          ),
+    },
   ];
 
   if (loading || !project) {
