@@ -229,7 +229,17 @@ public class DependencyScanService {
                     .replaceAll("\\s*```$", "");        // remove trailing ```
 
             List<ScannedDependency> result = objectMapper.readValue(cleanedJson, new TypeReference<>() {});
-            mailService.sendProjectCompletionEmail(toEmail, projectName);
+            List<HighRiskEmailReport> reportList = new ArrayList<>();
+            for(ScannedDependency sd: result){
+                if(sd.getRiskLevel().equals(RiskLevel.HIGH)){
+                    HighRiskEmailReport report = new HighRiskEmailReport();
+                    report.setDependencyName(sd.getPackageName());
+                    report.setDependencyVersion(sd.getCurrentVersion());
+                    report.setCveUrl(sd.getCveUrl());
+                    reportList.add(report);
+                }
+            }
+            mailService.sendHighRiskDependencyEmail(toEmail, projectName, reportList);
             return result;
 
         } catch (Exception e) {
