@@ -42,3 +42,5 @@ server:
 
 astra:
   token: AstraCS:fxpNCpzJFbkDCuulJjiEALNn:d9b171f83cb7af9a2c5de4db20f2f2797fc4f1539afee8ca5bb450ac4a0f6c96
+
+CRAWLER_URL: http://localhost:5001/vulns

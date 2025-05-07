@@ -21,9 +21,13 @@ services:
       - app-network
     depends_on:
       - crawler
+    environment:
+      - CRAWLER_URL=http://crawler:5001/vulns
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   crawler:
-    build: ./Webscraping/vuln_scrape
+    build: ./Webscraping/crawler
     ports:
       - "5001:5001"
     networks:
