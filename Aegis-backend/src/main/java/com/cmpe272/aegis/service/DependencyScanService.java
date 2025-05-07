@@ -49,7 +49,7 @@ public class DependencyScanService {
     @Value("${astra.token}")
     private String astraToken;
 
-    private static final String CRAWLER_URL = "http://localhost:5001/vulns";
+    private static final String CRAWLER_URL = "http://crawler:5001/vulns";
     private static final String ASTRA_LLM_URL = "https://api.langflow.astra.datastax.com/lf/3ba6c26d-8039-4a82-8001-8ac689b4f3d8/api/v1/run/187ef9ff-167d-4c24-8d4f-d07854528194?stream=false";
 
     public List<Project> queryProjectByUserId(Long id){

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload, Button, Form, Input, Typography, message, Card, Space } from 'antd';
 import { UploadOutlined, InboxOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
@@ -75,14 +76,11 @@ function UploadPage() {
 
         setTimeout(() => {
             message.info('📤 File uploaded. You will receive an email when your project finishes scanning.');
-            setTimeout(() => {
-                navigate('/home');
-            }, 3000);
-        }, 5000);
+            navigate('/home');
+        }, 2000);
 
-        // 实际发起请求（可忽略失败结果）
         try {
-            await fetch('http://localhost:8080/api/project/upload', {
+            await fetch(API_ENDPOINTS.PROJECT.UPLOAD, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
