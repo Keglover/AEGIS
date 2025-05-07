@@ -128,11 +128,11 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-vuln_scrape/.env
+crawler/.env
 .venv
-vuln_scrape/.env/
+crawler/.env/
 venv/
-vuln_scrape/.env/
+crawler/.env/
 env.bak/
 venv.bak/
 
