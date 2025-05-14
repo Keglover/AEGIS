@@ -31,7 +31,7 @@
 <ul>
   <li>Create your Redis and MySQL databases, and update the application.yml file with their configurations</li>
   <li>Set up the RAG</li>
-  <li>Navigate to the CMPE-272-Project directory and run docker compose up</li>
+  <li>Navigate to the project directory and run docker compose up</li>
 </ul>
 
 <h4>User Process Flow</h4>
